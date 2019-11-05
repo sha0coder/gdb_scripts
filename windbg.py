@@ -6,6 +6,9 @@ import os
 
 rAddr = re.compile('(0x[0-9a-f]*)')
 
+def p(msg):
+    print(msg)
+
 def g(cmd):
 	return gdb.execute(cmd,to_string=True).strip()
 
@@ -583,9 +586,28 @@ class DumpBytes(GDBCMD):
                 else:
                     s += '.'
             padd= '   ' * (8-len(bs))
-            print(padd+'\t\t'+s)
+            print(padd+'  '+s)
             
-            
+class BreakPoint(GDBCMD):
+    def invoked(self,args):
+        print(g('b '+args[0]))
+
+class BreakList(GDBCMD):
+    def invoked(self,args):
+        if len(args)>0:
+            p(g('info break '+args[0]))
+        else:
+            p(g('info break'))
+
+class BreakClear(GDBCMD):
+    def invoked(self,args):
+        if len(args)==0:
+            print('set the breakpoint number to clear')
+            return
+        if args[0] == '*':
+            p(g('delete break'))
+        else:
+            p(g('delete break '+args[0]))
 
 
 Go("g")
@@ -594,4 +616,7 @@ DumpUnicode("du")
 DumpDword("dd")
 DumpQword("dq")
 DumpBytes("db")
+BreakPoint("bp")
+BreakList("bl")
+BreakClear("bc")
 print('Windbg loaded.')
