@@ -28,7 +28,8 @@
 
 
 	TODO:
-		maps
+		dt with gdb's p
+		?? with eval
 		sd and sq use same algorithm than sa instead using gdb's find
 '''
 
@@ -539,9 +540,13 @@ class GDBCMD(gdb.Command):
 DBG=False
 def toNum(s):
 	s = str(s).strip()
+	if ' ' in s:
+		s = s.split(' ')[0].strip()
 	if s.startswith('poi('):
 		s = s[4:-1]
 		n = toNum(s)
+	
+
 		if DBG:
 			print('recursion result: %x' % n)
 		s = g('x/wx 0x%x' % n).split(':')[1][1:]
@@ -554,6 +559,8 @@ def toNum(s):
 			print('register value: '+s)
 
 	if s.startswith('0x'):
+		if ' ' in s:
+			s = s.split(' ')[0].strip()
 		h = int(s[2:],16)
 		if DBG:
 			print('hex string to int %d' % h)
