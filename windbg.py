@@ -601,18 +601,19 @@ class DumpUnicode(GDBCMD):
         print(g("x/s "+addr))   
 
 class DumpDword(GDBCMD):
-    def invoked(self,args):
-        addr = toNum(args[0])
-        n = 1
+	def invoked(self,args):
+		addr = toNum(args[0])
+		n = 1
 
-        if (len(args) == 2):
-            n=toNum(args[1])
-        
-        for i in range(n):
-            val = g("p (unsigned long *) 0x%x" % (addr)).split(' ')[-1]
-            print('0x%x: %s' % (addr, val))
-            addr += 4
-   
+		if (len(args) == 2):
+			n=toNum(args[1])
+
+		for i in range(n):
+			#val = g("p (unsigned long *) 0x%x" % (addr)).split(' ')[-1]
+			val = g('x/wx 0x%x' % addr).split(':')[1].strip()
+			print('0x%x: %s' % (addr, val))
+			addr += 4
+	
 class DumpQword(GDBCMD):
     def invoked(self,args):
         addr = toNum(args[0])
@@ -654,7 +655,7 @@ class DumpBytes(GDBCMD):
 class BreakPoint(GDBCMD):
 	def invoked(self,args):
 		where = args[0]
-		if where.startswith('0x'):	
+		if where.startswith('0x'):		
 			print(g('b *'+args[0]))
 		else:
 			print(g('b '+args[0]))
@@ -731,7 +732,6 @@ class SearchAscii(GDBCMD):
 		else:
 			print('size bad indicated L<relative amoutn of bytes>  L?<address>')
 			print('type sa for more help.')
-
 
 class SearchAscii(GDBCMD):
 	def invoked(self,args):
