@@ -7,7 +7,7 @@ import os
 rAddr = re.compile('(0x[0-9a-f]*)')
 
 def g(cmd):
-	return gdb.execute(cmd,to_string=True)
+	return gdb.execute(cmd,to_string=True).strip()
 
 def cont():
 	g('c')
@@ -498,20 +498,100 @@ class GDBCMD(gdb.Command):
 		self.invoked(args)
 
 
+def toNum(s):
+    s = str(s).strip()
+    if s.startswith('0x'):
+        return int(s[2:],16)
+    try:
+        return int(s)
+    except:
+        pass
+    if 'No symbol' in s:
+        print('wrong symbol '+s)
+        return 0
+    return int(g('x/x '+s).split(':')[0],16)
+    
+class Go(GDBCMD):
+    def invoked(self,args):
+        g("c")
+
 class DumpAscii(GDBCMD):
     def invoked(self,args):
-        print('test')
+        addr = args[0]
+        n = 0
+        if (len(args) == 2):
+            n=toNum(args[1]) #TODO: implement display n strings
+        
+        print(g("x/s "+addr))   
+        
 
 class DumpUnicode(GDBCMD):
     def invoked(self,args):
-        print('test')
+        addr = args[0]
+        n = 0
+        if (len(args) == 2):
+            n=toNum(args[1]) #TODO: implement display n strings
+        
+        print(g("x/s "+addr))   
+
+class DumpDword(GDBCMD):
+    def invoked(self,args):
+        addr = toNum(args[0])
+        n = 1
+
+        if (len(args) == 2):
+            n=toNum(args[1])
+        
+        for i in range(n):
+            val = g("p (unsigned long *) 0x%x" % (addr)).split(' ')[-1]
+            print('0x%x: %s' % (addr, val))
+            addr += 4
+   
+class DumpQword(GDBCMD):
+    def invoked(self,args):
+        addr = toNum(args[0])
+        n = 1
+
+        if (len(args) == 2):
+            n=toNum(args[1])
+        
+        for i in range(n):
+            val = g("p (unsigned long long *) 0x%x" % (addr)).split(' ')[-1]
+            print('0x%x: %s' % (addr, val))
+            addr += 4         
 
 class DumpBytes(GDBCMD):
     def invoked(self,args):
-        print('test')
+        addr = toNum(args[0])
+        n = 1
+
+        if (len(args) == 2):
+            n=toNum(args[1])
+
+        
+        for l in g('x/%dbx ' % n).split('\n'):
+            spl = l.split(':')
+            saddr = spl[0]
+            bs = spl[1].split('\t')[1:]
+            sys.stdout.write(saddr+': ')
+            s = ''
+            for x in bs:
+                b = toNum(x)
+                sys.stdout.write('%.2X ' % b)
+                if b >= ord(' ') and b <= ord('~'):
+                    s += chr(b)
+                else:
+                    s += '.'
+            padd= '   ' * (8-len(bs))
+            print(padd+'\t\t'+s)
+            
+            
 
 
-
+Go("g")
 DumpAscii("da")
 DumpUnicode("du")
+DumpDword("dd")
+DumpQword("dq")
 DumpBytes("db")
+print('Windbg loaded.')
