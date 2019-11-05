@@ -652,10 +652,10 @@ class DumpBytes(GDBCMD):
 			print(padd+'  '+s)
             
 class BreakPoint(GDBCMD):
-    def invoked(self,args):
+	def invoked(self,args):
 		where = args[0]
-		if where.startswith('0x')
-        	print(g('b *'+args[0]))
+		if where.startswith('0x'):	
+			print(g('b *'+args[0]))
 		else:
 			print(g('b '+args[0]))
 			
