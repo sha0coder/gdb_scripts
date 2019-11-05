@@ -515,8 +515,12 @@ def toNum(s):
     return int(g('x/x '+s).split(':')[0],16)
     
 class Go(GDBCMD):
-    def invoked(self,args):
-        g("c")
+	def invoked(self,args):
+		print('go')
+		try:
+			p(g("c"))
+		except:
+			p(g("r"))
 
 class DumpAscii(GDBCMD):
     def invoked(self,args):
@@ -609,7 +613,21 @@ class BreakClear(GDBCMD):
         else:
             p(g('delete break '+args[0]))
 
+class Stack(GDBCMD):
+    def invoked(self,args):
+        p(g('bt'))
 
+
+class Threads(GDBCMD):
+	def invoked(self,args):
+		if len(args) == 0:
+			p(g('info threads'))
+		else:
+			n = toNum(args[0])
+			p(g('thread %d' % n))
+
+
+g('set pagination off')
 Go("g")
 DumpAscii("da")
 DumpUnicode("du")
@@ -619,4 +637,6 @@ DumpBytes("db")
 BreakPoint("bp")
 BreakList("bl")
 BreakClear("bc")
+Stack("k")
+Threads("t")
 print('Windbg loaded.')
