@@ -21,10 +21,10 @@
 	u
 	-- registers --
 	r 
-
-
-
-
+	-- search --
+	sa
+	sd
+	sq
 '''
 
 
@@ -531,7 +531,7 @@ class GDBCMD(gdb.Command):
 		self.invoked(args)
 
 
-DBG=True
+DBG=False
 def toNum(s):
 	s = str(s).strip()
 	if s.startswith('poi('):
@@ -554,6 +554,8 @@ def toNum(s):
 			print('hex string to int %d' % h)
 		return h
 	try:
+		if DBG:
+			print('decimal integer')
 		return int(s)
 	except:
 		pass
@@ -562,6 +564,8 @@ def toNum(s):
 		print('wrong symbol '+s)
 		return 0
 
+	if DBG:
+		print('symbol')
 	return int(g('x/x '+s).split(':')[0],16)
     
 class Go(GDBCMD):
@@ -625,7 +629,6 @@ class DumpBytes(GDBCMD):
 		if (len(args) == 2):
 			n=toNum(args[1])
 			
-
 		
 		for l in g('x/%dbx  0x%x' % (n,addr)).split('\n'):
 			spl = l.split(':')
@@ -680,7 +683,11 @@ class Threads(GDBCMD):
 
 class Disass(GDBCMD):
 	def invoked(self,args):
-		p(g('x/10i $pc'))
+		if len(args) == 0:
+			p(g('x/10i $pc'))
+		else:
+			addr = toNum(args[0])
+			p(g('x/10i 0x%x' % addr))
 
 
 class Registers(GDBCMD):
@@ -690,6 +697,114 @@ class Registers(GDBCMD):
 		else:
 			p(g('i r '+' '.join(args)))
 
+class SearchAscii(GDBCMD):
+	def invoked(self,args):
+		if len(args) < 3:
+			p('Search ascii:')
+			p('  sa 0 L100 "test"')
+			p('  sa 0 L?0x11223344 "test"')
+			return
+		
+		
+		addr = toNum(args[0])
+		sz = args[1]
+		search = args[2]
+		
+
+		if sz.startswith('L?'):
+			sz = toNum(sz[2:])
+			p(g('find 0x%x, 0x%x, "%s"' % (addr, sz, search)))
+		elif sz.starstswith('L'):
+			sz = toNum(sz[1:])
+			p(g('find 0x%x, +%d, "%s"' % (addr, sz, search)))
+
+		else:
+			print('size bad indicated L<relative amoutn of bytes>  L?<address>')
+			print('type sa for more help.')
+
+class SearchDword(GDBCMD):
+	def invoked(self,args):
+		if len(args) < 3:
+			p('Search ascii:')
+			p('  sd 0 L100 0x11223344')
+			p('  sd 0 L?0x11223344 0x123')
+			p("  sd 0 L?0x11223344 0x00000123")
+			return
+		
+		
+		addr = toNum(args[0])
+		sz = args[1]
+		search = args[2]
+		
+
+		if sz.startswith('L?'):
+			sz = toNum(sz[2:])
+			p(g('find /sw 0x%x, 0x%x, %s' % (addr, sz, search)))
+		elif sz.starstswith('L'):
+			sz = toNum(sz[1:])
+			p(g('find /sw 0x%x, +%d, %s' % (addr, sz, search)))
+
+		else:
+			print('size bad indicated L<relative amoutn of bytes>  L?<address>')
+			print('type sd for more help.')
+
+
+class SearchQword(GDBCMD):
+	def invoked(self,args):
+		if len(args) < 3:
+			p('Search ascii:')
+			p('  sq 0 L100 0x1122334455667788')
+			p('  sq 0 L?0x11223344 0x0000012311221122')
+			p("  sq 0 L?0x11223344 0x0000012311221122")
+			return
+		
+		
+		addr = toNum(args[0])
+		sz = args[1]
+		search = args[2]
+		
+
+		if sz.startswith('L?'):
+			sz = toNum(sz[2:])
+			p(g('find /sg 0x%x, 0x%x, %s' % (addr, sz, search)))
+		elif sz.starstswith('L'):
+			sz = toNum(sz[1:])
+			p(g('find /sg 0x%x, +%d, %s' % (addr, sz, search)))
+
+		else:
+			print('size bad indicated L<relative amoutn of bytes>  L?<address>')
+			print('type sq for more help.')
+
+
+
+class Help(GDBCMD):
+	def invoked(self,args):
+		a='''
+
+	-- control flow --
+	g
+	-- dump --
+	dd
+	dq
+	db
+	ds
+	du
+	-- threads --
+	t
+	t 3
+	-- break points --
+	bp 
+	bl
+	bc
+	-- dissassm --
+	u
+	-- registers --
+	r 
+	-- search --
+	sa
+	sd
+	sq
+'''
 
 g('set pagination off')
 Go("g")
@@ -705,4 +820,9 @@ Stack("k")
 Threads("t")
 Disass("u")
 Registers("r")
+SearchAscii("sa")
+SearchDword("sd")
+SearchQword("sq")
+Help('hh')
+
 print('Windbg loaded.')
