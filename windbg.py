@@ -653,7 +653,12 @@ class DumpBytes(GDBCMD):
             
 class BreakPoint(GDBCMD):
     def invoked(self,args):
-        print(g('b '+args[0]))
+		where = args[0]
+		if where.startswith('0x')
+        	print(g('b *'+args[0]))
+		else:
+			print(g('b '+args[0]))
+			
 
 class BreakList(GDBCMD):
     def invoked(self,args):
