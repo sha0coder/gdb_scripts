@@ -890,6 +890,7 @@ class Help(GDBCMD):
 	-- info --
 	lm
 '''
+	print(a)
 
 g('set pagination off')
 Go("g")
