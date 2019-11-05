@@ -25,6 +25,11 @@
 	sa
 	sd
 	sq
+
+
+	TODO:
+		maps
+		sd and sq use same algorithm than sa instead using gdb's find
 '''
 
 
@@ -714,9 +719,70 @@ class SearchAscii(GDBCMD):
 		if sz.startswith('L?'):
 			sz = toNum(sz[2:])
 			p(g('find 0x%x, 0x%x, "%s"' % (addr, sz, search)))
-		elif sz.starstswith('L'):
+		elif sz.startswith('L'):
 			sz = toNum(sz[1:])
 			p(g('find 0x%x, +%d, "%s"' % (addr, sz, search)))
+
+		else:
+			print('size bad indicated L<relative amoutn of bytes>  L?<address>')
+			print('type sa for more help.')
+
+
+class SearchAscii(GDBCMD):
+	def invoked(self,args):
+		if len(args) < 3:
+			p('Search ascii:')
+			p('  sa 0 L100 "test"')
+			p('  sa 0 L?0x11223344 "test"')
+			return
+		
+		addr = toNum(args[0])
+		sz = args[1]
+		search = args[2]
+
+		if sz.startswith('L?'):
+			sz = toNum(sz[2:])
+			occ = 0
+			for a in range(addr, addr+sz):
+				try:
+					sys.stdout.write('0x%x        \r' % a)
+					sys.stdout.flush()
+					o = g('x/1bx 0x%x' % a)
+				except gdb.MemoryError:
+					continue
+
+				if 'Cannot' not in o:
+					b = toNum(o.split(': ')[1])
+					if ord(search[occ]) == b:   #TODO: optimize this
+						occ+=1
+						if occ >= len(search):
+							print('0x%d: "%s"' % (a,search))
+					else:
+						occ = 0
+
+			
+		elif sz.startswith('L'):
+			sz = toNum(sz[1:])
+			if sz < addr:
+				print('destination address has to be bigger than source address')
+				return
+			occ = 0
+			for a in range(addr, sz):
+				try:
+					sys.stdout.write('0x%x        \r' % a)
+					sys.stdout.flush()
+					o = g('x/1bx 0x%x' % a)
+				except gdb.MemoryError:
+					continue
+
+				if 'Cannot' not in o:
+					b = toNum(o.split(': ')[1])
+					if ord(search[occ]) == b:   #TODO: optimize this
+						occ+=1
+						if occ >= len(search):
+							print('0x%d: "%s"' % (a,search))
+					else:
+						occ = 0
 
 		else:
 			print('size bad indicated L<relative amoutn of bytes>  L?<address>')
@@ -740,7 +806,7 @@ class SearchDword(GDBCMD):
 		if sz.startswith('L?'):
 			sz = toNum(sz[2:])
 			p(g('find /sw 0x%x, 0x%x, %s' % (addr, sz, search)))
-		elif sz.starstswith('L'):
+		elif sz.startswith('L'):
 			sz = toNum(sz[1:])
 			p(g('find /sw 0x%x, +%d, %s' % (addr, sz, search)))
 
@@ -767,7 +833,7 @@ class SearchQword(GDBCMD):
 		if sz.startswith('L?'):
 			sz = toNum(sz[2:])
 			p(g('find /sg 0x%x, 0x%x, %s' % (addr, sz, search)))
-		elif sz.starstswith('L'):
+		elif sz.startswith('L'):
 			sz = toNum(sz[1:])
 			p(g('find /sg 0x%x, +%d, %s' % (addr, sz, search)))
 
@@ -776,6 +842,10 @@ class SearchQword(GDBCMD):
 			print('type sq for more help.')
 
 
+class Maps(GDBCMD):
+	def invoked(self,args):
+		pid = toNum(g("print getpid()").split('= ')[1])
+		p(open('/proc/self/maps','r').read())
 
 class Help(GDBCMD):
 	def invoked(self,args):
@@ -804,6 +874,8 @@ class Help(GDBCMD):
 	sa
 	sd
 	sq
+	-- info --
+	lm
 '''
 
 g('set pagination off')
@@ -820,9 +892,12 @@ Stack("k")
 Threads("t")
 Disass("u")
 Registers("r")
-SearchAscii("sa")
+SearchAscii2("sa")
 SearchDword("sd")
 SearchQword("sq")
+Maps("lm")
 Help('hh')
+
+
 
 print('Windbg loaded.')
