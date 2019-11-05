@@ -590,12 +590,12 @@ class Go(GDBCMD):
 
 class DumpAscii(GDBCMD):
     def invoked(self,args):
-        addr = args[0]
+        addr = toNum(args[0])
         n = 0
         if (len(args) == 2):
             n=toNum(args[1]) #TODO: implement display n strings
         
-        print(g("x/s "+addr))   
+        print(g("x/s 0x%x" % addr))   
         
 
 class DumpUnicode(GDBCMD):
