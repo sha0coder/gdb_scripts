@@ -1,3 +1,33 @@
+'''
+	Widbg commands on gdb
+	@sha0coder
+
+	-- control flow --
+	g
+	-- dump --
+	dd
+	dq
+	db
+	ds
+	du
+	-- threads --
+	t
+	t 3
+	-- break points --
+	bp 
+	bl
+	bc
+	-- dissassm --
+	u
+	-- registers --
+	r 
+
+
+
+
+'''
+
+
 import sys
 import re
 import os
@@ -501,18 +531,38 @@ class GDBCMD(gdb.Command):
 		self.invoked(args)
 
 
+DBG=True
 def toNum(s):
-    s = str(s).strip()
-    if s.startswith('0x'):
-        return int(s[2:],16)
-    try:
-        return int(s)
-    except:
-        pass
-    if 'No symbol' in s:
-        print('wrong symbol '+s)
-        return 0
-    return int(g('x/x '+s).split(':')[0],16)
+	s = str(s).strip()
+	if s.startswith('poi('):
+		s = s[4:-1]
+		n = toNum(s)
+		if DBG:
+			print('recursion result: %x' % n)
+		s = g('x/wx 0x%x' % n).split(':')[1][1:]
+		if DBG:
+			print('dereferenced to: '+s)
+
+	if s.startswith('@'):
+		s = g('i r '+s[1:]).split('\t')[-1]
+		if DBG:
+			print('register value: '+s)
+
+	if s.startswith('0x'):
+		h = int(s[2:],16)
+		if DBG:
+			print('hex string to int %d' % h)
+		return h
+	try:
+		return int(s)
+	except:
+		pass
+
+	if 'No symbol' in s:
+		print('wrong symbol '+s)
+		return 0
+
+	return int(g('x/x '+s).split(':')[0],16)
     
 class Go(GDBCMD):
 	def invoked(self,args):
@@ -568,29 +618,30 @@ class DumpQword(GDBCMD):
             addr += 4         
 
 class DumpBytes(GDBCMD):
-    def invoked(self,args):
-        addr = toNum(args[0])
-        n = 1
+	def invoked(self,args):
+		addr = toNum(args[0])
+		n = 16
 
-        if (len(args) == 2):
-            n=toNum(args[1])
+		if (len(args) == 2):
+			n=toNum(args[1])
+			
 
-        
-        for l in g('x/%dbx ' % n).split('\n'):
-            spl = l.split(':')
-            saddr = spl[0]
-            bs = spl[1].split('\t')[1:]
-            sys.stdout.write(saddr+': ')
-            s = ''
-            for x in bs:
-                b = toNum(x)
-                sys.stdout.write('%.2X ' % b)
-                if b >= ord(' ') and b <= ord('~'):
-                    s += chr(b)
-                else:
-                    s += '.'
-            padd= '   ' * (8-len(bs))
-            print(padd+'  '+s)
+		
+		for l in g('x/%dbx  0x%x' % (n,addr)).split('\n'):
+			spl = l.split(':')
+			saddr = spl[0]
+			bs = spl[1].split('\t')[1:]
+			sys.stdout.write(saddr+': ')
+			s = ''
+			for x in bs:
+				b = toNum(x)
+				sys.stdout.write('%.2X ' % b)
+				if b >= ord(' ') and b <= ord('~'):
+					s += chr(b)
+				else:
+					s += '.'
+			padd= '   ' * (8-len(bs))
+			print(padd+'  '+s)
             
 class BreakPoint(GDBCMD):
     def invoked(self,args):
@@ -627,6 +678,19 @@ class Threads(GDBCMD):
 			p(g('thread %d' % n))
 
 
+class Disass(GDBCMD):
+	def invoked(self,args):
+		p(g('x/10i $pc'))
+
+
+class Registers(GDBCMD):
+	def invoked(self,args):
+		if len(args) == 0:
+			p(g('i r'))
+		else:
+			p(g('i r '+' '.join(args)))
+
+
 g('set pagination off')
 Go("g")
 DumpAscii("da")
@@ -639,4 +703,6 @@ BreakList("bl")
 BreakClear("bc")
 Stack("k")
 Threads("t")
+Disass("u")
+Registers("r")
 print('Windbg loaded.')
