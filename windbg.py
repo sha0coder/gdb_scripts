@@ -741,7 +741,7 @@ class SearchAscii(GDBCMD):
 			print('size bad indicated L<relative amoutn of bytes>  L?<address>')
 			print('type sa for more help.')
 
-class SearchAscii(GDBCMD):
+class SearchAscii2(GDBCMD):
 	def invoked(self,args):
 		if len(args) < 3:
 			p('Search ascii:')
@@ -910,7 +910,6 @@ SearchDword("sd")
 SearchQword("sq")
 Maps("lm")
 Help('hh')
-
 
 
 print('Windbg loaded.')
